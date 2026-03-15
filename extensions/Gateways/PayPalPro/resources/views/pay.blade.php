@@ -1,3 +1,5 @@
+@php($paypalProDomId = 'paypal-pro-' . ($order->id ?? 'checkout'))
+
 <div class="space-y-4">
     <div class="rounded-xl border border-neutral bg-background-secondary p-4">
         <div class="flex items-center justify-between gap-3">
@@ -13,9 +15,9 @@
         </div>
     </div>
 
-    <div id="paypal-pro-selector" class="space-y-3">
+    <div id="{{ $paypalProDomId }}-selector" class="space-y-3">
         <div class="grid gap-3 md:grid-cols-2">
-            <button type="button" data-wallet-option="apple"
+            <button type="button" data-wallet-option="apple" data-paypal-pro-root="{{ $paypalProDomId }}"
                 class="paypal-pro-wallet-option flex items-center justify-between rounded-xl border border-neutral bg-background-secondary p-4 text-left transition hover:border-primary">
                 <div>
                     <div class="text-base font-semibold">Apple Pay</div>
@@ -24,7 +26,7 @@
                 <span class="rounded-full border border-neutral px-3 py-1 text-xs font-semibold">PayPal</span>
             </button>
 
-            <button type="button" data-wallet-option="google"
+            <button type="button" data-wallet-option="google" data-paypal-pro-root="{{ $paypalProDomId }}"
                 class="paypal-pro-wallet-option flex items-center justify-between rounded-xl border border-neutral bg-background-secondary p-4 text-left transition hover:border-primary">
                 <div>
                     <div class="text-base font-semibold">Google Pay</div>
@@ -35,66 +37,66 @@
         </div>
     </div>
 
-    <div id="paypal-pro-card-checkout" class="hidden rounded-xl border border-neutral bg-background-secondary p-4">
+    <div id="{{ $paypalProDomId }}-card-checkout" class="hidden rounded-xl border border-neutral bg-background-secondary p-4">
         <div class="flex items-start justify-between gap-4">
             <div>
-                <p id="paypal-pro-selected-wallet" class="text-sm font-semibold text-primary"></p>
+                <p id="{{ $paypalProDomId }}-selected-wallet" class="text-sm font-semibold text-primary"></p>
                 <h4 class="text-lg font-semibold">PayPal Credit Card Checkout</h4>
                 <p class="text-sm text-base/60">Enter the card details linked to your Apple Pay or Google Pay purchase flow.</p>
             </div>
-            <button type="button" id="paypal-pro-change-method" class="text-sm font-medium text-primary">
+            <button type="button" id="{{ $paypalProDomId }}-change-method" class="text-sm font-medium text-primary">
                 Change option
             </button>
         </div>
 
-        <div id="paypal-pro-card-eligibility-message"
+        <div id="{{ $paypalProDomId }}-card-eligibility-message"
             class="mt-4 hidden rounded-lg border border-amber-500/30 bg-amber-500/10 p-3 text-sm text-amber-200">
             PayPal card fields are not eligible for this merchant account yet.
         </div>
 
-        <div id="paypal-pro-card-loading"
+        <div id="{{ $paypalProDomId }}-card-loading"
             class="mt-4 hidden rounded-lg border border-neutral bg-background p-3 text-sm text-base/70">
             Loading PayPal credit card checkout...
         </div>
 
-        <div id="paypal-pro-card-form" class="mt-4 hidden space-y-4">
+        <div id="{{ $paypalProDomId }}-card-form" class="mt-4 hidden space-y-4">
             <div class="grid gap-4 md:grid-cols-2">
                 <div>
                     <label class="mb-1 block text-sm font-medium">Name on card</label>
-                    <div id="card-name-field-container"
+                    <div id="{{ $paypalProDomId }}-card-name-field-container"
                         class="rounded-lg border border-neutral bg-background px-3 py-3 min-h-[50px]"></div>
                 </div>
                 <div>
                     <label class="mb-1 block text-sm font-medium">Card number</label>
-                    <div id="card-number-field-container"
+                    <div id="{{ $paypalProDomId }}-card-number-field-container"
                         class="rounded-lg border border-neutral bg-background px-3 py-3 min-h-[50px]"></div>
                 </div>
                 <div>
                     <label class="mb-1 block text-sm font-medium">Expiry</label>
-                    <div id="card-expiry-field-container"
+                    <div id="{{ $paypalProDomId }}-card-expiry-field-container"
                         class="rounded-lg border border-neutral bg-background px-3 py-3 min-h-[50px]"></div>
                 </div>
                 <div>
                     <label class="mb-1 block text-sm font-medium">Security code</label>
-                    <div id="card-cvv-field-container"
+                    <div id="{{ $paypalProDomId }}-card-cvv-field-container"
                         class="rounded-lg border border-neutral bg-background px-3 py-3 min-h-[50px]"></div>
                 </div>
             </div>
 
-            <div id="paypal-pro-card-error"
+            <div id="{{ $paypalProDomId }}-card-error"
                 class="hidden rounded-lg border border-red-500/30 bg-red-500/10 p-3 text-sm text-red-200"></div>
 
-            <button type="button" id="paypal-pro-card-submit"
+            <button type="button" id="{{ $paypalProDomId }}-card-submit"
                 class="inline-flex w-full items-center justify-center rounded-lg bg-primary px-4 py-3 text-sm font-semibold text-white transition hover:opacity-90">
                 Pay {{ $invoice->formattedRemaining }}
             </button>
         </div>
 
-        <div id="paypal-pro-fallback-paypal" class="mt-4 hidden space-y-3">
+        <div id="{{ $paypalProDomId }}-fallback-paypal" class="mt-4 hidden space-y-3">
             <div class="rounded-lg border border-neutral bg-background p-3 text-sm text-base/70">
                 Standard PayPal checkout is available as a fallback if card fields are unavailable.
             </div>
-            <div id="paypal-pro-button-container"></div>
+            <div id="{{ $paypalProDomId }}-button-container"></div>
         </div>
     </div>
 </div>
@@ -104,21 +106,26 @@
         (() => {
             window.__paymenterSdkLoads = window.__paymenterSdkLoads || {};
 
+            const domId = @js($paypalProDomId);
             const orderId = @js($order->id ?? null);
             const captureUrl = @js(route('extensions.gateways.paypal_pro.capture'));
             const currencyCode = @js($invoice->currency_code);
             const clientId = @js($clientId);
 
-            const selector = document.getElementById('paypal-pro-selector');
-            const cardCheckout = document.getElementById('paypal-pro-card-checkout');
-            const selectedWalletLabel = document.getElementById('paypal-pro-selected-wallet');
-            const changeMethodButton = document.getElementById('paypal-pro-change-method');
-            const eligibilityMessage = document.getElementById('paypal-pro-card-eligibility-message');
-            const loadingBox = document.getElementById('paypal-pro-card-loading');
-            const cardForm = document.getElementById('paypal-pro-card-form');
-            const fallbackPayPal = document.getElementById('paypal-pro-fallback-paypal');
-            const submitButton = document.getElementById('paypal-pro-card-submit');
-            const errorBox = document.getElementById('paypal-pro-card-error');
+            const selector = document.getElementById(`${domId}-selector`);
+            const cardCheckout = document.getElementById(`${domId}-card-checkout`);
+            const selectedWalletLabel = document.getElementById(`${domId}-selected-wallet`);
+            const changeMethodButton = document.getElementById(`${domId}-change-method`);
+            const eligibilityMessage = document.getElementById(`${domId}-card-eligibility-message`);
+            const loadingBox = document.getElementById(`${domId}-card-loading`);
+            const cardForm = document.getElementById(`${domId}-card-form`);
+            const fallbackPayPal = document.getElementById(`${domId}-fallback-paypal`);
+            const submitButton = document.getElementById(`${domId}-card-submit`);
+            const errorBox = document.getElementById(`${domId}-card-error`);
+
+            if (!selector || !cardCheckout || !selectedWalletLabel || !changeMethodButton || !eligibilityMessage || !loadingBox || !cardForm || !fallbackPayPal || !submitButton || !errorBox) {
+                return;
+            }
 
             let cardFieldsInstance = null;
             let cardFieldsRendered = false;
@@ -229,7 +236,7 @@
                         console.error(error);
                         setError(error?.message || 'Unable to load PayPal checkout.');
                     },
-                }).render('#paypal-pro-button-container');
+                }).render(`#${domId}-button-container`);
             };
 
             const initCardFields = async () => {
@@ -286,10 +293,10 @@
 
                 cardFieldsRendered = true;
 
-                cardFields.NameField().render('#card-name-field-container');
-                cardFields.NumberField().render('#card-number-field-container');
-                cardFields.ExpiryField().render('#card-expiry-field-container');
-                cardFields.CVVField().render('#card-cvv-field-container');
+                cardFields.NameField().render(`#${domId}-card-name-field-container`);
+                cardFields.NumberField().render(`#${domId}-card-number-field-container`);
+                cardFields.ExpiryField().render(`#${domId}-card-expiry-field-container`);
+                cardFields.CVVField().render(`#${domId}-card-cvv-field-container`);
 
                 submitButton.addEventListener('click', async () => {
                     setError('');
@@ -331,7 +338,7 @@
             };
 
             document.addEventListener('click', (event) => {
-                const button = event.target.closest('[data-wallet-option]');
+                const button = event.target.closest(`[data-wallet-option][data-paypal-pro-root="${domId}"]`);
 
                 if (!button) {
                     return;
