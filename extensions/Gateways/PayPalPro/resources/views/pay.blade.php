@@ -32,6 +32,9 @@
 @script
     <script>
         (() => {
+            window.__paymenterSdkLoads = window.__paymenterSdkLoads || {};
+            window.__paymenterPayPalProInit = window.__paymenterPayPalProInit || {};
+
             const orderId = @js($order->id ?? null);
             const captureUrl = @js(route('extensions.gateways.paypal_pro.capture'));
             const currencyCode = @js($invoice->currency_code);
@@ -59,24 +62,51 @@
                 element?.classList.remove('hidden');
             };
 
-            const loadScript = (src, attributes = {}) => new Promise((resolve, reject) => {
-                if (document.querySelector(`script[src="${src}"]`)) {
-                    resolve();
-                    return;
+            const initKey = `${merchantId || 'default'}:${orderId || 'no-order'}`;
+
+            if (window.__paymenterPayPalProInit[initKey]) {
+                showFallbackMessage();
+                return;
+            }
+
+            window.__paymenterPayPalProInit[initKey] = true;
+
+            const loadScriptOnce = (key, src, attributes = {}, selector = `script[src="${src}"]`) => {
+                if (window.__paymenterSdkLoads[key]) {
+                    return window.__paymenterSdkLoads[key];
                 }
 
-                const script = document.createElement('script');
-                script.src = src;
-                script.async = true;
+                window.__paymenterSdkLoads[key] = new Promise((resolve, reject) => {
+                    const existingScript = document.querySelector(selector);
+                    if (existingScript) {
+                        if (existingScript.dataset.loaded === 'true') {
+                            resolve();
+                            return;
+                        }
 
-                Object.entries(attributes).forEach(([key, value]) => {
-                    script.setAttribute(key, value);
+                        existingScript.addEventListener('load', () => resolve(), { once: true });
+                        existingScript.addEventListener('error', reject, { once: true });
+                        return;
+                    }
+
+                    const script = document.createElement('script');
+                    script.src = src;
+                    script.async = true;
+
+                    Object.entries(attributes).forEach(([attribute, value]) => {
+                        script.setAttribute(attribute, value);
+                    });
+
+                    script.onload = () => {
+                        script.dataset.loaded = 'true';
+                        resolve();
+                    };
+                    script.onerror = reject;
+                    document.body.appendChild(script);
                 });
 
-                script.onload = resolve;
-                script.onerror = reject;
-                document.body.appendChild(script);
-            });
+                return window.__paymenterSdkLoads[key];
+            };
 
             const captureOrder = async () => {
                 const response = await fetch(`${captureUrl}?orderID=${encodeURIComponent(orderId)}`, {
@@ -118,7 +148,14 @@
                 }
 
                 const applepay = paypal.Applepay();
-                const applepayConfig = await applepay.config();
+                let applepayConfig;
+
+                try {
+                    applepayConfig = await applepay.config();
+                } catch (error) {
+                    console.warn('applepay_config_error', error);
+                    return;
+                }
 
                 if (!applepayConfig?.isEligible) {
                     return;
@@ -189,7 +226,14 @@
                 }
 
                 const googlePay = paypal.Googlepay();
-                const googlePayConfig = await googlePay.config();
+                let googlePayConfig;
+
+                try {
+                    googlePayConfig = await googlePay.config();
+                } catch (error) {
+                    console.warn('googlepay_config_error', error);
+                    return;
+                }
 
                 if (!googlePayConfig?.allowedPaymentMethods?.length) {
                     return;
@@ -276,9 +320,24 @@
             };
 
             Promise.all([
-                loadScript(buildPayPalSdkUrl()),
-                loadScript('https://applepay.cdn-apple.com/jsapi/1.latest/apple-pay-sdk.js'),
-                loadScript('https://pay.google.com/gp/p/js/pay.js'),
+                loadScriptOnce(
+                    'paypal-sdk',
+                    buildPayPalSdkUrl(),
+                    {},
+                    'script[src^="https://www.paypal.com/sdk/js"]'
+                ),
+                loadScriptOnce(
+                    'apple-pay-sdk',
+                    'https://applepay.cdn-apple.com/jsapi/1.latest/apple-pay-sdk.js',
+                    {},
+                    'script[src^="https://applepay.cdn-apple.com/jsapi/"]'
+                ),
+                loadScriptOnce(
+                    'google-pay-sdk',
+                    'https://pay.google.com/gp/p/js/pay.js',
+                    {},
+                    'script[src="https://pay.google.com/gp/p/js/pay.js"]'
+                ),
             ]).then(async () => {
                 if (!orderId || !window.paypal) {
                     showFallbackMessage();
