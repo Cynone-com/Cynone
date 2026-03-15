@@ -3,28 +3,86 @@
         <div class="flex items-center justify-between gap-3">
             <div>
                 <h3 class="text-lg font-semibold">PayPal Pro</h3>
-                <p class="text-sm text-base/60">Use Apple Pay or Google Pay through PayPal.</p>
+                <p class="text-sm text-base/60">Choose Apple Pay or Google Pay, then complete checkout with PayPal card processing.</p>
             </div>
             <div class="flex flex-wrap items-center justify-end gap-2 text-xs font-semibold">
                 <span class="rounded-full border border-neutral px-3 py-1">Apple Pay</span>
                 <span class="rounded-full border border-neutral px-3 py-1">Google Pay</span>
+                <span class="rounded-full border border-neutral px-3 py-1">Cards</span>
             </div>
         </div>
     </div>
 
-    <div id="paypal-pro-wallets" class="space-y-4">
-        <div id="paypal-pro-applepay" class="hidden">
-            <div class="mb-2 text-sm font-medium">Apple Pay</div>
-            <div id="applepay-container"></div>
+    <div id="paypal-pro-selector" class="space-y-3">
+        <div class="grid gap-3 md:grid-cols-2">
+            <button type="button" data-wallet-option="apple"
+                class="paypal-pro-wallet-option flex items-center justify-between rounded-xl border border-neutral bg-background-secondary p-4 text-left transition hover:border-primary">
+                <div>
+                    <div class="text-base font-semibold">Apple Pay</div>
+                    <div class="text-sm text-base/60">Continue with PayPal credit card checkout</div>
+                </div>
+                <span class="rounded-full border border-neutral px-3 py-1 text-xs font-semibold">PayPal</span>
+            </button>
+
+            <button type="button" data-wallet-option="google"
+                class="paypal-pro-wallet-option flex items-center justify-between rounded-xl border border-neutral bg-background-secondary p-4 text-left transition hover:border-primary">
+                <div>
+                    <div class="text-base font-semibold">Google Pay</div>
+                    <div class="text-sm text-base/60">Continue with PayPal credit card checkout</div>
+                </div>
+                <span class="rounded-full border border-neutral px-3 py-1 text-xs font-semibold">PayPal</span>
+            </button>
+        </div>
+    </div>
+
+    <div id="paypal-pro-card-checkout" class="hidden rounded-xl border border-neutral bg-background-secondary p-4">
+        <div class="flex items-start justify-between gap-4">
+            <div>
+                <p id="paypal-pro-selected-wallet" class="text-sm font-semibold text-primary"></p>
+                <h4 class="text-lg font-semibold">PayPal Credit Card Checkout</h4>
+                <p class="text-sm text-base/60">Enter the card details linked to your Apple Pay or Google Pay purchase flow.</p>
+            </div>
+            <button type="button" id="paypal-pro-change-method" class="text-sm font-medium text-primary">
+                Change option
+            </button>
         </div>
 
-        <div id="paypal-pro-googlepay" class="hidden">
-            <div class="mb-2 text-sm font-medium">Google Pay</div>
-            <div id="googlepay-container"></div>
+        <div id="paypal-pro-card-eligibility-message"
+            class="mt-4 hidden rounded-lg border border-amber-500/30 bg-amber-500/10 p-3 text-sm text-amber-200">
+            PayPal card fields are not eligible for this merchant account yet.
         </div>
 
-        <div id="paypal-pro-message" class="hidden rounded-lg border border-neutral bg-background p-4 text-sm text-base/70">
-            Apple Pay and Google Pay are not available on this device or PayPal account yet.
+        <div id="paypal-pro-card-form" class="mt-4 hidden space-y-4">
+            <div class="grid gap-4 md:grid-cols-2">
+                <div>
+                    <label class="mb-1 block text-sm font-medium">Name on card</label>
+                    <div id="card-name-field-container"
+                        class="rounded-lg border border-neutral bg-background px-3 py-3 min-h-[50px]"></div>
+                </div>
+                <div>
+                    <label class="mb-1 block text-sm font-medium">Card number</label>
+                    <div id="card-number-field-container"
+                        class="rounded-lg border border-neutral bg-background px-3 py-3 min-h-[50px]"></div>
+                </div>
+                <div>
+                    <label class="mb-1 block text-sm font-medium">Expiry</label>
+                    <div id="card-expiry-field-container"
+                        class="rounded-lg border border-neutral bg-background px-3 py-3 min-h-[50px]"></div>
+                </div>
+                <div>
+                    <label class="mb-1 block text-sm font-medium">Security code</label>
+                    <div id="card-cvv-field-container"
+                        class="rounded-lg border border-neutral bg-background px-3 py-3 min-h-[50px]"></div>
+                </div>
+            </div>
+
+            <div id="paypal-pro-card-error"
+                class="hidden rounded-lg border border-red-500/30 bg-red-500/10 p-3 text-sm text-red-200"></div>
+
+            <button type="button" id="paypal-pro-card-submit"
+                class="inline-flex w-full items-center justify-center rounded-lg bg-primary px-4 py-3 text-sm font-semibold text-white transition hover:opacity-90">
+                Pay {{ $invoice->formattedRemaining }}
+            </button>
         </div>
     </div>
 </div>
@@ -33,70 +91,56 @@
     <script>
         (() => {
             window.__paymenterSdkLoads = window.__paymenterSdkLoads || {};
-            window.__paymenterPayPalProInit = window.__paymenterPayPalProInit || {};
 
             const orderId = @js($order->id ?? null);
             const captureUrl = @js(route('extensions.gateways.paypal_pro.capture'));
             const currencyCode = @js($invoice->currency_code);
-            const total = @js(number_format((float) $total, 2, '.', ''));
             const clientId = @js($clientId);
-            const buyerCountry = @js($buyerCountry);
-            const merchantId = @js($merchantId ?: null);
-            const companyName = @js($companyName);
-            const googleEnvironment = @js($isSandbox ? 'TEST' : 'PRODUCTION');
 
-            const message = document.getElementById('paypal-pro-message');
-            const applePaySection = document.getElementById('paypal-pro-applepay');
-            const googlePaySection = document.getElementById('paypal-pro-googlepay');
-            let hasVisibleWallet = false;
+            const selector = document.getElementById('paypal-pro-selector');
+            const cardCheckout = document.getElementById('paypal-pro-card-checkout');
+            const selectedWalletLabel = document.getElementById('paypal-pro-selected-wallet');
+            const changeMethodButton = document.getElementById('paypal-pro-change-method');
+            const eligibilityMessage = document.getElementById('paypal-pro-card-eligibility-message');
+            const cardForm = document.getElementById('paypal-pro-card-form');
+            const submitButton = document.getElementById('paypal-pro-card-submit');
+            const errorBox = document.getElementById('paypal-pro-card-error');
 
-            const showFallbackMessage = () => {
-                if (!hasVisibleWallet && message) {
-                    message.classList.remove('hidden');
+            let cardFieldsInstance = null;
+            let cardFieldsRendered = false;
+
+            const setError = (message) => {
+                if (!message) {
+                    errorBox.classList.add('hidden');
+                    errorBox.textContent = '';
+                    return;
                 }
+
+                errorBox.textContent = message;
+                errorBox.classList.remove('hidden');
             };
 
-            const showWallet = (element) => {
-                hasVisibleWallet = true;
-                message?.classList.add('hidden');
-                element?.classList.remove('hidden');
-            };
-
-            const initKey = `${merchantId || 'default'}:${orderId || 'no-order'}`;
-
-            if (window.__paymenterPayPalProInit[initKey]) {
-                showFallbackMessage();
-                return;
-            }
-
-            window.__paymenterPayPalProInit[initKey] = true;
-
-            const loadScriptOnce = (key, src, attributes = {}, selector = `script[src="${src}"]`) => {
+            const loadScriptOnce = (key, src, selectorQuery = `script[src="${src}"]`) => {
                 if (window.__paymenterSdkLoads[key]) {
                     return window.__paymenterSdkLoads[key];
                 }
 
                 window.__paymenterSdkLoads[key] = new Promise((resolve, reject) => {
-                    const existingScript = document.querySelector(selector);
-                    if (existingScript) {
-                        if (existingScript.dataset.loaded === 'true') {
+                    const existing = document.querySelector(selectorQuery);
+                    if (existing) {
+                        if (existing.dataset.loaded === 'true') {
                             resolve();
                             return;
                         }
 
-                        existingScript.addEventListener('load', () => resolve(), { once: true });
-                        existingScript.addEventListener('error', reject, { once: true });
+                        existing.addEventListener('load', () => resolve(), { once: true });
+                        existing.addEventListener('error', reject, { once: true });
                         return;
                     }
 
                     const script = document.createElement('script');
                     script.src = src;
                     script.async = true;
-
-                    Object.entries(attributes).forEach(([attribute, value]) => {
-                        script.setAttribute(attribute, value);
-                    });
-
                     script.onload = () => {
                         script.dataset.loaded = 'true';
                         resolve();
@@ -106,6 +150,15 @@
                 });
 
                 return window.__paymenterSdkLoads[key];
+            };
+
+            const buildPayPalSdkUrl = () => {
+                const url = new URL('https://www.paypal.com/sdk/js');
+                url.searchParams.set('client-id', clientId);
+                url.searchParams.set('currency', currencyCode);
+                url.searchParams.set('components', 'card-fields');
+
+                return url.toString();
             };
 
             const captureOrder = async () => {
@@ -124,235 +177,110 @@
                 }
 
                 window.location.href = @js(route('invoices.show', $invoice) . '?checkPayment=true');
-
                 return data;
             };
 
-            const buildPayPalSdkUrl = () => {
-                const url = new URL('https://www.paypal.com/sdk/js');
-                url.searchParams.set('client-id', clientId);
-                url.searchParams.set('currency', currencyCode);
-                url.searchParams.set('components', 'applepay,googlepay');
-                url.searchParams.set('buyer-country', buyerCountry);
-
-                if (merchantId) {
-                    url.searchParams.set('merchant-id', merchantId);
+            const initCardFields = async () => {
+                if (cardFieldsInstance) {
+                    return cardFieldsInstance;
                 }
 
-                return url.toString();
-            };
-
-            const initApplePay = async () => {
-                if (!window.paypal?.Applepay || !window.ApplePaySession || !ApplePaySession.canMakePayments()) {
-                    return;
-                }
-
-                const applepay = paypal.Applepay();
-                let applepayConfig;
-
-                try {
-                    applepayConfig = await applepay.config();
-                } catch (error) {
-                    console.warn('applepay_config_error', error);
-                    return;
-                }
-
-                if (!applepayConfig?.isEligible) {
-                    return;
-                }
-
-                showWallet(applePaySection);
-
-                const container = document.getElementById('applepay-container');
-                container.innerHTML = '<apple-pay-button buttonstyle="black" type="buy" locale="en"></apple-pay-button>';
-
-                const button = container.querySelector('apple-pay-button');
-                button.addEventListener('click', async () => {
-                    const paymentRequest = {
-                        countryCode: applepayConfig.countryCode,
-                        merchantCapabilities: applepayConfig.merchantCapabilities,
-                        supportedNetworks: applepayConfig.supportedNetworks,
-                        currencyCode,
-                        total: {
-                            label: companyName,
-                            type: 'final',
-                            amount: total,
-                        },
-                    };
-
-                    const session = new ApplePaySession(4, paymentRequest);
-
-                    session.onvalidatemerchant = async (event) => {
-                        try {
-                            const merchantSession = await applepay.validateMerchant({
-                                validationUrl: event.validationURL,
-                                displayName: companyName,
-                            });
-
-                            session.completeMerchantValidation(merchantSession?.merchantSession ?? merchantSession);
-                        } catch (error) {
-                            console.error(error);
-                            session.abort();
-                        }
-                    };
-
-                    session.onpaymentauthorized = async (event) => {
-                        try {
-                            const result = await applepay.confirmOrder({
-                                orderId,
-                                token: event.payment.token,
-                                billingContact: event.payment.billingContact,
-                            });
-
-                            if (!['APPROVED', 'COMPLETED'].includes(result?.status)) {
-                                throw new Error('Apple Pay confirmation was not approved.');
-                            }
-
-                            await captureOrder();
-                            session.completePayment(ApplePaySession.STATUS_SUCCESS);
-                        } catch (error) {
-                            console.error(error);
-                            session.completePayment(ApplePaySession.STATUS_FAILURE);
-                        }
-                    };
-
-                    session.begin();
-                });
-            };
-
-            const initGooglePay = async () => {
-                if (!window.paypal?.Googlepay || !window.google?.payments?.api) {
-                    return;
-                }
-
-                const googlePay = paypal.Googlepay();
-                let googlePayConfig;
-
-                try {
-                    googlePayConfig = await googlePay.config();
-                } catch (error) {
-                    console.warn('googlepay_config_error', error);
-                    return;
-                }
-
-                if (!googlePayConfig?.allowedPaymentMethods?.length) {
-                    return;
-                }
-
-                const paymentsClient = new google.payments.api.PaymentsClient({
-                    environment: googleEnvironment,
-                    paymentDataCallbacks: {
-                        onPaymentAuthorized: async (paymentData) => {
-                            try {
-                                const result = await googlePay.confirmOrder({
-                                    orderId,
-                                    paymentMethodData: paymentData.paymentMethodData,
-                                    billingAddress: paymentData.paymentMethodData?.info?.billingAddress,
-                                    email: paymentData.email,
-                                });
-
-                                if (!['APPROVED', 'COMPLETED'].includes(result?.status)) {
-                                    return {
-                                        transactionState: 'ERROR',
-                                        error: {
-                                            intent: 'PAYMENT_AUTHORIZATION',
-                                            message: 'Google Pay confirmation was not approved.',
-                                        },
-                                    };
-                                }
-
-                                await captureOrder();
-
-                                return {
-                                    transactionState: 'SUCCESS',
-                                };
-                            } catch (error) {
-                                console.error(error);
-
-                                return {
-                                    transactionState: 'ERROR',
-                                    error: {
-                                        intent: 'PAYMENT_AUTHORIZATION',
-                                        message: error?.message || 'Google Pay failed.',
-                                    },
-                                };
-                            }
-                        },
-                    },
-                });
-
-                const isReadyToPayRequest = {
-                    apiVersion: 2,
-                    apiVersionMinor: 0,
-                    allowedPaymentMethods: googlePayConfig.allowedPaymentMethods,
-                };
-
-                const ready = await paymentsClient.isReadyToPay(isReadyToPayRequest);
-
-                if (!ready?.result) {
-                    return;
-                }
-
-                showWallet(googlePaySection);
-
-                const button = paymentsClient.createButton({
-                    onClick: async () => {
-                        const paymentDataRequest = {
-                            apiVersion: 2,
-                            apiVersionMinor: 0,
-                            allowedPaymentMethods: googlePayConfig.allowedPaymentMethods,
-                            merchantInfo: googlePayConfig.merchantInfo,
-                            transactionInfo: {
-                                currencyCode,
-                                totalPriceStatus: 'FINAL',
-                                totalPrice: total,
-                            },
-                            callbackIntents: ['PAYMENT_AUTHORIZATION'],
-                            emailRequired: true,
-                        };
-
-                        await paymentsClient.loadPaymentData(paymentDataRequest);
-                    },
-                    allowedPaymentMethods: googlePayConfig.allowedPaymentMethods,
-                });
-
-                document.getElementById('googlepay-container').appendChild(button);
-            };
-
-            Promise.all([
-                loadScriptOnce(
-                    'paypal-sdk',
+                await loadScriptOnce(
+                    'paypal-card-fields-sdk',
                     buildPayPalSdkUrl(),
-                    {},
                     'script[src^="https://www.paypal.com/sdk/js"]'
-                ),
-                loadScriptOnce(
-                    'apple-pay-sdk',
-                    'https://applepay.cdn-apple.com/jsapi/1.latest/apple-pay-sdk.js',
-                    {},
-                    'script[src^="https://applepay.cdn-apple.com/jsapi/"]'
-                ),
-                loadScriptOnce(
-                    'google-pay-sdk',
-                    'https://pay.google.com/gp/p/js/pay.js',
-                    {},
-                    'script[src="https://pay.google.com/gp/p/js/pay.js"]'
-                ),
-            ]).then(async () => {
-                if (!orderId || !window.paypal) {
-                    showFallbackMessage();
+                );
+
+                if (!window.paypal?.CardFields) {
+                    throw new Error('PayPal card fields failed to load.');
+                }
+
+                cardFieldsInstance = paypal.CardFields({
+                    createOrder: () => orderId,
+                    onApprove: async () => {
+                        await captureOrder();
+                    },
+                    onError: (error) => {
+                        console.error(error);
+                        setError(error?.message || 'Card payment failed. Please check your details and try again.');
+                    },
+                });
+
+                return cardFieldsInstance;
+            };
+
+            const renderCardFields = async () => {
+                setError('');
+
+                const cardFields = await initCardFields();
+
+                if (!cardFields.isEligible()) {
+                    eligibilityMessage.classList.remove('hidden');
+                    cardForm.classList.add('hidden');
                     return;
                 }
 
-                await Promise.allSettled([
-                    initApplePay(),
-                    initGooglePay(),
-                ]);
+                eligibilityMessage.classList.add('hidden');
+                cardForm.classList.remove('hidden');
 
-                showFallbackMessage();
-            }).catch((error) => {
-                console.error(error);
-                showFallbackMessage();
+                if (cardFieldsRendered) {
+                    return;
+                }
+
+                cardFieldsRendered = true;
+
+                cardFields.NameField().render('#card-name-field-container');
+                cardFields.NumberField().render('#card-number-field-container');
+                cardFields.ExpiryField().render('#card-expiry-field-container');
+                cardFields.CVVField().render('#card-cvv-field-container');
+
+                submitButton.addEventListener('click', async () => {
+                    setError('');
+                    submitButton.disabled = true;
+                    submitButton.classList.add('opacity-60', 'pointer-events-none');
+
+                    try {
+                        const state = await cardFields.getState();
+
+                        if (!state?.isFormValid) {
+                            throw new Error('Please complete all card fields before submitting.');
+                        }
+
+                        await cardFields.submit();
+                    } catch (error) {
+                        console.error(error);
+                        setError(error?.message || 'Unable to submit card payment.');
+                    } finally {
+                        submitButton.disabled = false;
+                        submitButton.classList.remove('opacity-60', 'pointer-events-none');
+                    }
+                }, { once: true });
+            };
+
+            const showCardCheckout = async (walletLabel) => {
+                selectedWalletLabel.textContent = `${walletLabel} selected`;
+                selector.classList.add('hidden');
+                cardCheckout.classList.remove('hidden');
+
+                try {
+                    await renderCardFields();
+                } catch (error) {
+                    console.error(error);
+                    setError(error?.message || 'Unable to load PayPal card checkout.');
+                }
+            };
+
+            document.querySelectorAll('[data-wallet-option]').forEach((button) => {
+                button.addEventListener('click', () => {
+                    const wallet = button.dataset.walletOption === 'apple' ? 'Apple Pay' : 'Google Pay';
+                    showCardCheckout(wallet);
+                });
+            });
+
+            changeMethodButton?.addEventListener('click', () => {
+                cardCheckout.classList.add('hidden');
+                selector.classList.remove('hidden');
+                setError('');
             });
         })();
     </script>
