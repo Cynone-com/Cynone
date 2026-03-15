@@ -180,6 +180,42 @@
             </div>
         </div>
     </div>
+
+    <div id="{{ $paypalProDomId }}-googlepay-modal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/55 p-4">
+        <div class="relative w-full max-w-[580px] overflow-hidden rounded-[2rem] bg-white text-[#202124] shadow-2xl">
+            <button type="button" id="{{ $paypalProDomId }}-googlepay-close"
+                class="absolute right-5 top-5 flex size-10 items-center justify-center rounded-full bg-black/5 text-[#202124] transition hover:bg-black/10">
+                <span class="text-2xl leading-none">&times;</span>
+            </button>
+
+            <div class="px-8 pb-8 pt-10 text-center">
+                <div class="mx-auto mb-8 flex size-[250px] items-center justify-center rounded-full bg-[#f1f3f4]">
+                    <div class="text-center">
+                        <div class="text-[2.8rem] font-semibold tracking-tight">
+                            <span class="text-[#4285F4]">G</span><span class="text-[#EA4335]">o</span><span class="text-[#FBBC05]">o</span><span class="text-[#4285F4]">g</span><span class="text-[#34A853]">l</span><span class="text-[#EA4335]">e</span>
+                        </div>
+                        <div class="mt-1 text-3xl font-semibold">Pay</div>
+                    </div>
+                </div>
+
+                <h3 class="text-[2rem] font-semibold leading-tight">Continue with Google Pay</h3>
+                <p class="mx-auto mt-3 max-w-md text-lg leading-8 text-[#5f6368]">
+                    Your Google Pay path is ready. If the live checkout does not load, a dummy card checkout fallback will appear automatically.
+                </p>
+
+                <div class="mt-8 flex flex-col gap-3 sm:flex-row sm:justify-center">
+                    <button type="button" id="{{ $paypalProDomId }}-googlepay-continue"
+                        class="rounded-xl bg-[#4285F4] px-5 py-3 text-sm font-semibold text-white transition hover:bg-[#357ae8]">
+                        Continue to Checkout
+                    </button>
+                    <button type="button" id="{{ $paypalProDomId }}-googlepay-cancel"
+                        class="rounded-xl border border-black/10 bg-white px-5 py-3 text-sm font-semibold text-[#202124] transition hover:bg-[#f8f9fa]">
+                        Cancel
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
 
 @script
@@ -209,8 +245,12 @@
             const applePayClose = document.getElementById(`${domId}-applepay-close`);
             const applePayCancel = document.getElementById(`${domId}-applepay-cancel`);
             const applePayContinue = document.getElementById(`${domId}-applepay-continue`);
+            const googlePayModal = document.getElementById(`${domId}-googlepay-modal`);
+            const googlePayClose = document.getElementById(`${domId}-googlepay-close`);
+            const googlePayCancel = document.getElementById(`${domId}-googlepay-cancel`);
+            const googlePayContinue = document.getElementById(`${domId}-googlepay-continue`);
 
-            if (!selector || !cardCheckout || !selectedWalletLabel || !changeMethodButton || !eligibilityMessage || !loadingBox || !cardForm || !fallbackPayPal || !dummyCheckout || !submitButton || !errorBox || !applePayModal || !applePayClose || !applePayCancel || !applePayContinue) {
+            if (!selector || !cardCheckout || !selectedWalletLabel || !changeMethodButton || !eligibilityMessage || !loadingBox || !cardForm || !fallbackPayPal || !dummyCheckout || !submitButton || !errorBox || !applePayModal || !applePayClose || !applePayCancel || !applePayContinue || !googlePayModal || !googlePayClose || !googlePayCancel || !googlePayContinue) {
                 return;
             }
 
@@ -421,6 +461,16 @@
                 applePayModal.classList.add('flex');
             };
 
+            const closeGooglePayModal = () => {
+                googlePayModal.classList.add('hidden');
+                googlePayModal.classList.remove('flex');
+            };
+
+            const openGooglePayModal = () => {
+                googlePayModal.classList.remove('hidden');
+                googlePayModal.classList.add('flex');
+            };
+
             const showCardCheckout = async (walletLabel) => {
                 selectedWalletLabel.textContent = `${walletLabel} selected`;
                 selector.classList.add('hidden');
@@ -442,6 +492,11 @@
             const handleWalletSelection = async (walletLabel) => {
                 if (walletLabel === 'Apple Pay') {
                     openApplePayModal();
+                    return;
+                }
+
+                if (walletLabel === 'Google Pay') {
+                    openGooglePayModal();
                     return;
                 }
 
@@ -479,7 +534,7 @@
             if (preselectedWallet === 'applepay') {
                 openApplePayModal();
             } else if (preselectedWallet === 'googlepay') {
-                showCardCheckout('Google Pay');
+                openGooglePayModal();
             }
 
             applePayClose.addEventListener('click', closeApplePayModal);
@@ -495,6 +550,22 @@
             applePayModal.addEventListener('click', (event) => {
                 if (event.target === applePayModal) {
                     closeApplePayModal();
+                }
+            });
+
+            googlePayClose.addEventListener('click', closeGooglePayModal);
+            googlePayCancel.addEventListener('click', () => {
+                closeGooglePayModal();
+                cardCheckout.classList.add('hidden');
+                selector.classList.remove('hidden');
+            });
+            googlePayContinue.addEventListener('click', async () => {
+                closeGooglePayModal();
+                await showCardCheckout('Google Pay');
+            });
+            googlePayModal.addEventListener('click', (event) => {
+                if (event.target === googlePayModal) {
+                    closeGooglePayModal();
                 }
             });
         })();
