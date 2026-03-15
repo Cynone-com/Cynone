@@ -101,6 +101,37 @@
             </div>
             <div id="{{ $paypalProDomId }}-button-container"></div>
         </div>
+
+        <div id="{{ $paypalProDomId }}-dummy-checkout" class="mt-4 hidden space-y-4">
+            <div class="rounded-lg border border-dashed border-neutral bg-background p-4">
+                <div class="mb-3 text-sm font-semibold">Fallback card form</div>
+                <p class="mb-4 text-sm text-base/60">
+                    The live PayPal card fields did not load, so this backup checkout layout is being shown instead.
+                </p>
+                <div class="grid gap-4 md:grid-cols-2">
+                    <div>
+                        <label class="mb-1 block text-sm font-medium">Cardholder name</label>
+                        <input type="text" disabled placeholder="John Doe"
+                            class="w-full rounded-lg border border-neutral bg-background-secondary px-3 py-3 text-sm opacity-80" />
+                    </div>
+                    <div>
+                        <label class="mb-1 block text-sm font-medium">Card number</label>
+                        <input type="text" disabled placeholder="4111 1111 1111 1111"
+                            class="w-full rounded-lg border border-neutral bg-background-secondary px-3 py-3 text-sm opacity-80" />
+                    </div>
+                    <div>
+                        <label class="mb-1 block text-sm font-medium">Expiry date</label>
+                        <input type="text" disabled placeholder="12/30"
+                            class="w-full rounded-lg border border-neutral bg-background-secondary px-3 py-3 text-sm opacity-80" />
+                    </div>
+                    <div>
+                        <label class="mb-1 block text-sm font-medium">Security code</label>
+                        <input type="text" disabled placeholder="123"
+                            class="w-full rounded-lg border border-neutral bg-background-secondary px-3 py-3 text-sm opacity-80" />
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 </div>
 
@@ -124,10 +155,11 @@
             const loadingBox = document.getElementById(`${domId}-card-loading`);
             const cardForm = document.getElementById(`${domId}-card-form`);
             const fallbackPayPal = document.getElementById(`${domId}-fallback-paypal`);
+            const dummyCheckout = document.getElementById(`${domId}-dummy-checkout`);
             const submitButton = document.getElementById(`${domId}-card-submit`);
             const errorBox = document.getElementById(`${domId}-card-error`);
 
-            if (!selector || !cardCheckout || !selectedWalletLabel || !changeMethodButton || !eligibilityMessage || !loadingBox || !cardForm || !fallbackPayPal || !submitButton || !errorBox) {
+            if (!selector || !cardCheckout || !selectedWalletLabel || !changeMethodButton || !eligibilityMessage || !loadingBox || !cardForm || !fallbackPayPal || !dummyCheckout || !submitButton || !errorBox) {
                 return;
             }
 
@@ -209,6 +241,7 @@
             const renderFallbackButtons = async () => {
                 if (fallbackButtonsRendered) {
                     fallbackPayPal.classList.remove('hidden');
+                    dummyCheckout.classList.remove('hidden');
                     return;
                 }
 
@@ -224,6 +257,7 @@
 
                 fallbackButtonsRendered = true;
                 fallbackPayPal.classList.remove('hidden');
+                dummyCheckout.classList.remove('hidden');
 
                 paypal.Buttons({
                     style: {
@@ -276,6 +310,7 @@
                 setError('');
                 loadingBox.classList.remove('hidden');
                 fallbackPayPal.classList.add('hidden');
+                dummyCheckout.classList.add('hidden');
 
                 const cardFields = await initCardFields();
 
@@ -329,6 +364,7 @@
                 selectedWalletLabel.textContent = `${walletLabel} selected`;
                 selector.classList.add('hidden');
                 cardCheckout.classList.remove('hidden');
+                dummyCheckout.classList.add('hidden');
 
                 try {
                     await renderCardFields();
@@ -336,6 +372,7 @@
                     console.error(error);
                     loadingBox.classList.add('hidden');
                     fallbackPayPal.classList.remove('hidden');
+                    dummyCheckout.classList.remove('hidden');
                     setError(error?.message || 'Unable to load PayPal card checkout.');
                     await renderFallbackButtons();
                 }
@@ -365,6 +402,7 @@
                 selector.classList.remove('hidden');
                 loadingBox.classList.add('hidden');
                 fallbackPayPal.classList.add('hidden');
+                dummyCheckout.classList.add('hidden');
                 setError('');
             });
 
