@@ -114,6 +114,54 @@
                 $isPayPal = strtolower($method->extension) === 'paypal';
                 $isPayPalPro = strtolower($method->extension) === 'paypalpro';
             @endphp
+            @if($isPayPalPro)
+            <div wire:click="$set('selectedMethod', 'gateway-{{ $method->id }}:applepay')"
+                class="flex items-center justify-between p-4 border rounded-lg cursor-pointer transition-all {{ $selectedMethod === 'gateway-' . $method->id . ':applepay' ? 'border-primary ring-2 ring-primary' : 'border-neutral hover:border-neutral-focus' }}"
+                wire:loading.class="opacity-50 pointer-events-none" wire:target="selectedMethod,processPayment">
+                <div class="flex items-center space-x-4">
+                    <div
+                        class="bg-background-secondary border border-neutral rounded-lg overflow-hidden flex items-center justify-center h-9 w-9">
+                        <div class="flex flex-col items-center justify-center text-[9px] font-semibold leading-none">
+                            <span>AP</span>
+                        </div>
+                    </div>
+                    <div>
+                        <p class="font-medium">Apple Pay</p>
+                        <p class="text-sm text-base/50">PayPal Pro checkout</p>
+                    </div>
+                </div>
+                <div
+                    class="size-5 rounded-full bg-background-secondary border border-neutral flex items-center justify-center {{ $selectedMethod === 'gateway-' . $method->id . ':applepay' ? 'border-primary bg-primary' : 'border-neutral-focus' }}">
+                    @if($selectedMethod === 'gateway-' . $method->id . ':applepay')
+                    <x-ri-check-line class="size-4 text-white" />
+                    @endif
+                </div>
+            </div>
+
+            <div wire:click="$set('selectedMethod', 'gateway-{{ $method->id }}:googlepay')"
+                class="flex items-center justify-between p-4 border rounded-lg cursor-pointer transition-all {{ $selectedMethod === 'gateway-' . $method->id . ':googlepay' ? 'border-primary ring-2 ring-primary' : 'border-neutral hover:border-neutral-focus' }}"
+                wire:loading.class="opacity-50 pointer-events-none" wire:target="selectedMethod,processPayment">
+                <div class="flex items-center space-x-4">
+                    <div
+                        class="bg-background-secondary border border-neutral rounded-lg overflow-hidden flex items-center justify-center h-9 w-9">
+                        <div class="flex flex-col items-center justify-center text-[9px] font-semibold leading-none">
+                            <span>GP</span>
+                        </div>
+                    </div>
+                    <div>
+                        <p class="font-medium">Google Pay</p>
+                        <p class="text-sm text-base/50">PayPal Pro checkout</p>
+                    </div>
+                </div>
+                <div
+                    class="size-5 rounded-full bg-background-secondary border border-neutral flex items-center justify-center {{ $selectedMethod === 'gateway-' . $method->id . ':googlepay' ? 'border-primary bg-primary' : 'border-neutral-focus' }}">
+                    @if($selectedMethod === 'gateway-' . $method->id . ':googlepay')
+                    <x-ri-check-line class="size-4 text-white" />
+                    @endif
+                </div>
+            </div>
+            @continue
+            @endif
             <div wire:click="$set('selectedMethod', 'gateway-{{ $method->id }}')"
                 class="flex items-center justify-between p-4 border rounded-lg cursor-pointer transition-all {{ $selectedMethod === 'gateway-' . $method->id ? 'border-primary ring-2 ring-primary' : 'border-neutral hover:border-neutral-focus' }}"
                 wire:loading.class="opacity-50 pointer-events-none" wire:target="selectedMethod,processPayment">

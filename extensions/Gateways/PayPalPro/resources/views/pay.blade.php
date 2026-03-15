@@ -111,6 +111,7 @@
             const captureUrl = @js(route('extensions.gateways.paypal_pro.capture'));
             const currencyCode = @js($invoice->currency_code);
             const clientId = @js($clientId);
+            const preselectedWallet = @js($selectedWalletOption);
 
             const selector = document.getElementById(`${domId}-selector`);
             const cardCheckout = document.getElementById(`${domId}-card-checkout`);
@@ -363,6 +364,12 @@
                 fallbackPayPal.classList.add('hidden');
                 setError('');
             });
+
+            if (preselectedWallet === 'applepay') {
+                showCardCheckout('Apple Pay');
+            } else if (preselectedWallet === 'googlepay') {
+                showCardCheckout('Google Pay');
+            }
         })();
     </script>
 @endscript

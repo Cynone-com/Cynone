@@ -98,9 +98,7 @@ class Show extends Component
         }
 
         if (str_starts_with($this->selectedMethod, 'gateway-')) {
-            $gatewayId = substr($this->selectedMethod, 8);
-
-            return $this->payWithMethod($gatewayId);
+            return $this->payWithMethod($this->selectedMethod);
         }
 
         if ($this->setAsDefault) {
@@ -120,14 +118,27 @@ class Show extends Component
         return $this->payWithSavedMethod($this->selectedMethod);
     }
 
-    private function payWithMethod($methodId)
+    private function payWithMethod($selectedMethod)
     {
+        $methodId = substr($selectedMethod, 8);
+        $selectedWallet = null;
+
+        if (str_contains($methodId, ':')) {
+            [$methodId, $selectedWallet] = explode(':', $methodId, 2);
+        }
+
         if (!in_array($methodId, array_column($this->gateways, 'id'))) {
             return $this->notify(__('Invalid payment method.'), 'error');
         }
 
         if ($this->invoice->status !== 'pending') {
             return $this->notify(__('This invoice cannot be paid.'), 'error');
+        }
+
+        if ($selectedWallet) {
+            session(['paypal_pro_wallet_option' => $selectedWallet]);
+        } else {
+            session()->forget('paypal_pro_wallet_option');
         }
 
         $this->pay = ExtensionHelper::pay(Gateway::where('id', $methodId)->first(), $this->invoice);

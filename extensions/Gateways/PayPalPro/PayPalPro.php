@@ -102,6 +102,7 @@ class PayPalPro extends PayPal
             'buyerCountry' => strtoupper($this->config('buyer_country') ?: 'US'),
             'companyName' => config('settings.company_name', config('app.name')),
             'isSandbox' => (bool) $this->config('test_mode'),
+            'selectedWalletOption' => session()->pull('paypal_pro_wallet_option'),
         ]);
     }
 
