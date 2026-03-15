@@ -7,12 +7,11 @@
         <div class="flex items-center justify-between gap-3">
             <div>
                 <h3 class="text-lg font-semibold">PayPal Pro</h3>
-                <p class="text-sm text-base/60">Choose Apple Pay or Google Pay, then complete checkout with PayPal card processing.</p>
+                <p class="text-sm text-base/60">Choose Apple Pay or Google Pay to open a wallet-styled checkout flow.</p>
             </div>
             <div class="flex flex-wrap items-center justify-end gap-2 text-xs font-semibold">
                 <span class="rounded-full border border-neutral px-3 py-1">Apple Pay</span>
                 <span class="rounded-full border border-neutral px-3 py-1">Google Pay</span>
-                <span class="rounded-full border border-neutral px-3 py-1">Cards</span>
             </div>
         </div>
     </div>
@@ -21,116 +20,180 @@
     <div id="{{ $paypalProDomId }}-selector" class="space-y-3 {{ $hasPreselectedWallet ? 'hidden' : '' }}">
         <div class="grid gap-3 md:grid-cols-2">
             <button type="button" data-wallet-option="apple" data-paypal-pro-root="{{ $paypalProDomId }}"
-                class="paypal-pro-wallet-option flex items-center justify-between rounded-xl border border-neutral bg-background-secondary p-4 text-left transition hover:border-primary">
+                class="flex items-center justify-between rounded-xl border border-neutral bg-background-secondary p-4 text-left transition hover:border-primary">
                 <div>
                     <div class="text-base font-semibold">Apple Pay</div>
-                    <div class="text-sm text-base/60">Continue with PayPal credit card checkout</div>
+                    <div class="text-sm text-base/60">Open Apple Pay styled checkout</div>
                 </div>
                 <span class="rounded-full border border-neutral px-3 py-1 text-xs font-semibold">PayPal</span>
             </button>
 
             <button type="button" data-wallet-option="google" data-paypal-pro-root="{{ $paypalProDomId }}"
-                class="paypal-pro-wallet-option flex items-center justify-between rounded-xl border border-neutral bg-background-secondary p-4 text-left transition hover:border-primary">
+                class="flex items-center justify-between rounded-xl border border-neutral bg-background-secondary p-4 text-left transition hover:border-primary">
                 <div>
                     <div class="text-base font-semibold">Google Pay</div>
-                    <div class="text-sm text-base/60">Continue with PayPal credit card checkout</div>
+                    <div class="text-sm text-base/60">Open Google Pay styled checkout</div>
                 </div>
                 <span class="rounded-full border border-neutral px-3 py-1 text-xs font-semibold">PayPal</span>
             </button>
         </div>
     </div>
 
-    <div id="{{ $paypalProDomId }}-card-checkout" class="{{ $hasPreselectedWallet ? '' : 'hidden' }} rounded-xl border border-neutral bg-background-secondary p-4">
+    <div id="{{ $paypalProDomId }}-checkout" class="{{ $hasPreselectedWallet ? '' : 'hidden' }} rounded-xl border border-neutral bg-background-secondary p-4">
         <div class="flex items-start justify-between gap-4">
             <div>
                 <p id="{{ $paypalProDomId }}-selected-wallet" class="text-sm font-semibold text-primary"></p>
-                <h4 class="text-lg font-semibold">PayPal Credit Card Checkout</h4>
-                <p class="text-sm text-base/60">Enter the card details linked to your Apple Pay or Google Pay purchase flow.</p>
+                <h4 id="{{ $paypalProDomId }}-checkout-title" class="text-lg font-semibold">Wallet Checkout</h4>
+                <p id="{{ $paypalProDomId }}-checkout-subtitle" class="text-sm text-base/60">
+                    Complete your wallet styled checkout below.
+                </p>
             </div>
             <button type="button" id="{{ $paypalProDomId }}-change-method" class="text-sm font-medium text-primary">
                 Change option
             </button>
         </div>
 
-        <div id="{{ $paypalProDomId }}-card-eligibility-message"
-            class="mt-4 hidden rounded-lg border border-amber-500/30 bg-amber-500/10 p-3 text-sm text-amber-200">
-            PayPal card fields are not eligible for this merchant account yet.
-        </div>
+        <div id="{{ $paypalProDomId }}-apple-dummy" class="mt-5 hidden space-y-4">
+            <div class="overflow-hidden rounded-[1.75rem] bg-[#1f1f22] text-white shadow-xl">
+                <div class="px-6 pb-6 pt-5">
+                    <div class="mb-5 flex items-center justify-between">
+                        <div class="text-lg font-semibold">Apple Pay</div>
+                        <div class="rounded-full bg-white/10 px-3 py-1 text-xs font-medium">Demo</div>
+                    </div>
 
-        <div id="{{ $paypalProDomId }}-card-loading"
-            class="mt-4 hidden rounded-lg border border-neutral bg-background p-3 text-sm text-base/70">
-            Loading PayPal credit card checkout...
-        </div>
+                    <div class="rounded-[1.5rem] bg-black px-5 py-4 shadow-inner">
+                        <div class="flex items-center justify-between text-sm text-white/80">
+                            <span>Default Card</span>
+                            <span>•••• 4242</span>
+                        </div>
+                        <div class="mt-4 flex items-center justify-between">
+                            <div class="text-2xl font-semibold">Pay</div>
+                            <div class="text-right text-xs text-white/70">
+                                <div>Amount Due</div>
+                                <div class="mt-1 text-base font-semibold text-white">{{ $invoice->formattedRemaining }}</div>
+                            </div>
+                        </div>
+                    </div>
 
-        <div id="{{ $paypalProDomId }}-card-form" class="mt-4 hidden space-y-4">
-            <div class="grid gap-4 md:grid-cols-2">
-                <div>
-                    <label class="mb-1 block text-sm font-medium">Name on card</label>
-                    <div id="{{ $paypalProDomId }}-card-name-field-container"
-                        class="rounded-lg border border-neutral bg-background px-3 py-3 min-h-[50px]"></div>
-                </div>
-                <div>
-                    <label class="mb-1 block text-sm font-medium">Card number</label>
-                    <div id="{{ $paypalProDomId }}-card-number-field-container"
-                        class="rounded-lg border border-neutral bg-background px-3 py-3 min-h-[50px]"></div>
-                </div>
-                <div>
-                    <label class="mb-1 block text-sm font-medium">Expiry</label>
-                    <div id="{{ $paypalProDomId }}-card-expiry-field-container"
-                        class="rounded-lg border border-neutral bg-background px-3 py-3 min-h-[50px]"></div>
-                </div>
-                <div>
-                    <label class="mb-1 block text-sm font-medium">Security code</label>
-                    <div id="{{ $paypalProDomId }}-card-cvv-field-container"
-                        class="rounded-lg border border-neutral bg-background px-3 py-3 min-h-[50px]"></div>
+                    <div class="mt-5 grid gap-4 md:grid-cols-2">
+                        <div class="rounded-xl border border-white/10 bg-white/5 p-4">
+                            <div class="text-xs uppercase tracking-[0.2em] text-white/50">Billing Contact</div>
+                            <div class="mt-2 text-sm font-medium">Omar Cynone</div>
+                            <div class="mt-1 text-sm text-white/65">hostpanel.1987.ai</div>
+                        </div>
+                        <div class="rounded-xl border border-white/10 bg-white/5 p-4">
+                            <div class="text-xs uppercase tracking-[0.2em] text-white/50">Wallet Device</div>
+                            <div class="mt-2 text-sm font-medium">iPhone Ready</div>
+                            <div class="mt-1 text-sm text-white/65">Face ID confirmation simulation</div>
+                        </div>
+                    </div>
                 </div>
             </div>
 
-            <div id="{{ $paypalProDomId }}-card-error"
-                class="hidden rounded-lg border border-red-500/30 bg-red-500/10 p-3 text-sm text-red-200"></div>
-
-            <button type="button" id="{{ $paypalProDomId }}-card-submit"
-                class="inline-flex w-full items-center justify-center rounded-lg bg-primary px-4 py-3 text-sm font-semibold text-white transition hover:opacity-90">
-                Pay {{ $invoice->formattedRemaining }}
-            </button>
-        </div>
-
-        <div id="{{ $paypalProDomId }}-fallback-paypal" class="mt-4 hidden space-y-3">
-            <div class="rounded-lg border border-neutral bg-background p-3 text-sm text-base/70">
-                Standard PayPal checkout is available as a fallback if card fields are unavailable.
-            </div>
-            <div id="{{ $paypalProDomId }}-button-container"></div>
-        </div>
-
-        <div id="{{ $paypalProDomId }}-dummy-checkout" class="mt-4 hidden space-y-4">
-            <div class="rounded-lg border border-dashed border-neutral bg-background p-4">
-                <div class="mb-3 text-sm font-semibold">Fallback card form</div>
-                <p class="mb-4 text-sm text-base/60">
-                    The live PayPal card fields did not load, so this backup checkout layout is being shown instead.
-                </p>
+            <div class="rounded-xl border border-dashed border-neutral bg-background p-4">
+                <div class="mb-2 text-sm font-semibold">Fallback Apple Pay card review</div>
                 <div class="grid gap-4 md:grid-cols-2">
-                    <div>
-                        <label class="mb-1 block text-sm font-medium">Cardholder name</label>
-                        <input type="text" disabled placeholder="John Doe"
-                            class="w-full rounded-lg border border-neutral bg-background-secondary px-3 py-3 text-sm opacity-80" />
+                    <div class="rounded-lg border border-neutral bg-background-secondary p-3">
+                        <div class="text-xs text-base/50">Cardholder</div>
+                        <div class="mt-1 font-medium">Omar Cynone</div>
                     </div>
-                    <div>
-                        <label class="mb-1 block text-sm font-medium">Card number</label>
-                        <input type="text" disabled placeholder="4111 1111 1111 1111"
-                            class="w-full rounded-lg border border-neutral bg-background-secondary px-3 py-3 text-sm opacity-80" />
+                    <div class="rounded-lg border border-neutral bg-background-secondary p-3">
+                        <div class="text-xs text-base/50">Card</div>
+                        <div class="mt-1 font-medium">Visa ending in 4242</div>
                     </div>
-                    <div>
-                        <label class="mb-1 block text-sm font-medium">Expiry date</label>
-                        <input type="text" disabled placeholder="12/30"
-                            class="w-full rounded-lg border border-neutral bg-background-secondary px-3 py-3 text-sm opacity-80" />
+                    <div class="rounded-lg border border-neutral bg-background-secondary p-3">
+                        <div class="text-xs text-base/50">Invoice</div>
+                        <div class="mt-1 font-medium">#{{ $invoice->number ?? $invoice->id }}</div>
                     </div>
-                    <div>
-                        <label class="mb-1 block text-sm font-medium">Security code</label>
-                        <input type="text" disabled placeholder="123"
-                            class="w-full rounded-lg border border-neutral bg-background-secondary px-3 py-3 text-sm opacity-80" />
+                    <div class="rounded-lg border border-neutral bg-background-secondary p-3">
+                        <div class="text-xs text-base/50">Amount</div>
+                        <div class="mt-1 font-medium">{{ $invoice->formattedRemaining }}</div>
                     </div>
                 </div>
             </div>
+
+            <div class="flex gap-3">
+                <button type="button" id="{{ $paypalProDomId }}-apple-confirm"
+                    class="inline-flex flex-1 items-center justify-center rounded-lg bg-white px-4 py-3 text-sm font-semibold text-black transition hover:bg-white/90">
+                    Confirm Apple Pay Demo
+                </button>
+            </div>
+        </div>
+
+        <div id="{{ $paypalProDomId }}-google-dummy" class="mt-5 hidden space-y-4">
+            <div class="overflow-hidden rounded-[1.75rem] border border-black/5 bg-white text-[#202124] shadow-xl">
+                <div class="px-6 pb-6 pt-5">
+                    <div class="mb-5 flex items-center justify-between">
+                        <div class="text-lg font-semibold">Google Pay</div>
+                        <div class="rounded-full bg-[#f1f3f4] px-3 py-1 text-xs font-medium">Demo</div>
+                    </div>
+
+                    <div class="rounded-[1.5rem] bg-[#f8f9fa] px-5 py-4 shadow-inner">
+                        <div class="flex items-center justify-between text-sm text-[#5f6368]">
+                            <span>Saved Card</span>
+                            <span>Mastercard •••• 4444</span>
+                        </div>
+                        <div class="mt-4 flex items-center justify-between">
+                            <div>
+                                <div class="text-[2rem] font-semibold tracking-tight">
+                                    <span class="text-[#4285F4]">G</span><span class="text-[#EA4335]">o</span><span class="text-[#FBBC05]">o</span><span class="text-[#4285F4]">g</span><span class="text-[#34A853]">l</span><span class="text-[#EA4335]">e</span>
+                                </div>
+                                <div class="text-xl font-semibold">Pay</div>
+                            </div>
+                            <div class="text-right text-xs text-[#5f6368]">
+                                <div>Amount Due</div>
+                                <div class="mt-1 text-base font-semibold text-[#202124]">{{ $invoice->formattedRemaining }}</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mt-5 grid gap-4 md:grid-cols-2">
+                        <div class="rounded-xl border border-black/10 bg-[#f8f9fa] p-4">
+                            <div class="text-xs uppercase tracking-[0.2em] text-[#5f6368]">Google Account</div>
+                            <div class="mt-2 text-sm font-medium">omar@cynone.test</div>
+                            <div class="mt-1 text-sm text-[#5f6368]">Protected checkout simulation</div>
+                        </div>
+                        <div class="rounded-xl border border-black/10 bg-[#f8f9fa] p-4">
+                            <div class="text-xs uppercase tracking-[0.2em] text-[#5f6368]">Device</div>
+                            <div class="mt-2 text-sm font-medium">Chrome Wallet</div>
+                            <div class="mt-1 text-sm text-[#5f6368]">Passkey-ready demo flow</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="rounded-xl border border-dashed border-neutral bg-background p-4">
+                <div class="mb-2 text-sm font-semibold">Fallback Google Pay order review</div>
+                <div class="grid gap-4 md:grid-cols-2">
+                    <div class="rounded-lg border border-neutral bg-background-secondary p-3">
+                        <div class="text-xs text-base/50">Profile</div>
+                        <div class="mt-1 font-medium">Primary Wallet Account</div>
+                    </div>
+                    <div class="rounded-lg border border-neutral bg-background-secondary p-3">
+                        <div class="text-xs text-base/50">Card</div>
+                        <div class="mt-1 font-medium">Mastercard ending in 4444</div>
+                    </div>
+                    <div class="rounded-lg border border-neutral bg-background-secondary p-3">
+                        <div class="text-xs text-base/50">Invoice</div>
+                        <div class="mt-1 font-medium">#{{ $invoice->number ?? $invoice->id }}</div>
+                    </div>
+                    <div class="rounded-lg border border-neutral bg-background-secondary p-3">
+                        <div class="text-xs text-base/50">Amount</div>
+                        <div class="mt-1 font-medium">{{ $invoice->formattedRemaining }}</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="flex gap-3">
+                <button type="button" id="{{ $paypalProDomId }}-google-confirm"
+                    class="inline-flex flex-1 items-center justify-center rounded-lg bg-[#4285F4] px-4 py-3 text-sm font-semibold text-white transition hover:bg-[#357ae8]">
+                    Confirm Google Pay Demo
+                </button>
+            </div>
+        </div>
+
+        <div id="{{ $paypalProDomId }}-dummy-message" class="mt-4 hidden rounded-lg border border-neutral bg-background p-4 text-sm text-base/70">
+            This is a demo checkout section only. No live payment will be processed from PayPal Pro in this fallback mode.
         </div>
     </div>
 
@@ -140,7 +203,6 @@
                 class="absolute right-5 top-5 flex size-10 items-center justify-center rounded-full bg-white/10 text-white transition hover:bg-white/20">
                 <span class="text-2xl leading-none">&times;</span>
             </button>
-
             <div class="flex flex-col items-center px-8 pb-8 pt-10">
                 <div class="relative mb-8 flex size-[250px] items-center justify-center rounded-full">
                     <div class="absolute inset-0 rounded-full border-[6px] border-dashed border-white/70"></div>
@@ -156,24 +218,21 @@
                     </div>
                 </div>
             </div>
-
             <div class="bg-black/20 px-8 pb-6 pt-7 text-center">
                 <h3 class="text-[2rem] font-semibold leading-tight">Scan Code with iPhone</h3>
                 <p class="mx-auto mt-3 max-w-md text-lg leading-8 text-white/85">
                     Use the Camera app to continue your Apple Pay purchase on your iPhone. Requires iOS 18 or later.
                 </p>
-
                 <div class="mt-8 flex flex-col gap-3 sm:flex-row sm:justify-center">
                     <button type="button" id="{{ $paypalProDomId }}-applepay-continue"
                         class="rounded-xl bg-white px-5 py-3 text-sm font-semibold text-black transition hover:bg-white/90">
-                        Continue to Checkout
+                        Continue to Demo Checkout
                     </button>
                     <button type="button" id="{{ $paypalProDomId }}-applepay-cancel"
                         class="rounded-xl border border-white/15 bg-white/5 px-5 py-3 text-sm font-semibold text-white transition hover:bg-white/10">
                         Cancel
                     </button>
                 </div>
-
                 <p class="mt-7 text-xs text-white/60">
                     Copyright &copy; 2026 Apple Inc. All rights reserved. <span class="underline">Privacy Policy</span>
                 </p>
@@ -187,7 +246,6 @@
                 class="absolute right-5 top-5 flex size-10 items-center justify-center rounded-full bg-black/5 text-[#202124] transition hover:bg-black/10">
                 <span class="text-2xl leading-none">&times;</span>
             </button>
-
             <div class="px-8 pb-8 pt-10 text-center">
                 <div class="mx-auto mb-8 flex size-[250px] items-center justify-center rounded-full bg-[#f1f3f4]">
                     <div class="text-center">
@@ -197,16 +255,14 @@
                         <div class="mt-1 text-3xl font-semibold">Pay</div>
                     </div>
                 </div>
-
                 <h3 class="text-[2rem] font-semibold leading-tight">Continue with Google Pay</h3>
                 <p class="mx-auto mt-3 max-w-md text-lg leading-8 text-[#5f6368]">
-                    Your Google Pay path is ready. If the live checkout does not load, a dummy card checkout fallback will appear automatically.
+                    Open the Google Pay styled demo checkout and review your purchase details before confirmation.
                 </p>
-
                 <div class="mt-8 flex flex-col gap-3 sm:flex-row sm:justify-center">
                     <button type="button" id="{{ $paypalProDomId }}-googlepay-continue"
                         class="rounded-xl bg-[#4285F4] px-5 py-3 text-sm font-semibold text-white transition hover:bg-[#357ae8]">
-                        Continue to Checkout
+                        Continue to Demo Checkout
                     </button>
                     <button type="button" id="{{ $paypalProDomId }}-googlepay-cancel"
                         class="rounded-xl border border-black/10 bg-white px-5 py-3 text-sm font-semibold text-[#202124] transition hover:bg-[#f8f9fa]">
@@ -221,26 +277,18 @@
 @script
     <script>
         (() => {
-            window.__paymenterSdkLoads = window.__paymenterSdkLoads || {};
-
             const domId = @js($paypalProDomId);
-            const orderId = @js($order->id ?? null);
-            const captureUrl = @js(route('extensions.gateways.paypal_pro.capture'));
-            const currencyCode = @js($invoice->currency_code);
-            const clientId = @js($clientId);
             const preselectedWallet = @js($selectedWalletOption);
 
             const selector = document.getElementById(`${domId}-selector`);
-            const cardCheckout = document.getElementById(`${domId}-card-checkout`);
+            const checkout = document.getElementById(`${domId}-checkout`);
             const selectedWalletLabel = document.getElementById(`${domId}-selected-wallet`);
+            const checkoutTitle = document.getElementById(`${domId}-checkout-title`);
+            const checkoutSubtitle = document.getElementById(`${domId}-checkout-subtitle`);
             const changeMethodButton = document.getElementById(`${domId}-change-method`);
-            const eligibilityMessage = document.getElementById(`${domId}-card-eligibility-message`);
-            const loadingBox = document.getElementById(`${domId}-card-loading`);
-            const cardForm = document.getElementById(`${domId}-card-form`);
-            const fallbackPayPal = document.getElementById(`${domId}-fallback-paypal`);
-            const dummyCheckout = document.getElementById(`${domId}-dummy-checkout`);
-            const submitButton = document.getElementById(`${domId}-card-submit`);
-            const errorBox = document.getElementById(`${domId}-card-error`);
+            const appleDummy = document.getElementById(`${domId}-apple-dummy`);
+            const googleDummy = document.getElementById(`${domId}-google-dummy`);
+            const dummyMessage = document.getElementById(`${domId}-dummy-message`);
             const applePayModal = document.getElementById(`${domId}-applepay-modal`);
             const applePayClose = document.getElementById(`${domId}-applepay-close`);
             const applePayCancel = document.getElementById(`${domId}-applepay-cancel`);
@@ -249,258 +297,47 @@
             const googlePayClose = document.getElementById(`${domId}-googlepay-close`);
             const googlePayCancel = document.getElementById(`${domId}-googlepay-cancel`);
             const googlePayContinue = document.getElementById(`${domId}-googlepay-continue`);
+            const appleConfirm = document.getElementById(`${domId}-apple-confirm`);
+            const googleConfirm = document.getElementById(`${domId}-google-confirm`);
 
-            if (!selector || !cardCheckout || !selectedWalletLabel || !changeMethodButton || !eligibilityMessage || !loadingBox || !cardForm || !fallbackPayPal || !dummyCheckout || !submitButton || !errorBox || !applePayModal || !applePayClose || !applePayCancel || !applePayContinue || !googlePayModal || !googlePayClose || !googlePayCancel || !googlePayContinue) {
+            if (!selector || !checkout || !selectedWalletLabel || !checkoutTitle || !checkoutSubtitle || !changeMethodButton || !appleDummy || !googleDummy || !dummyMessage || !applePayModal || !applePayClose || !applePayCancel || !applePayContinue || !googlePayModal || !googlePayClose || !googlePayCancel || !googlePayContinue || !appleConfirm || !googleConfirm) {
                 return;
             }
 
-            let cardFieldsInstance = null;
-            let cardFieldsRendered = false;
-            let fallbackButtonsRendered = false;
-
-            const setError = (message) => {
-                if (!message) {
-                    errorBox.classList.add('hidden');
-                    errorBox.textContent = '';
-                    return;
-                }
-
-                errorBox.textContent = message;
-                errorBox.classList.remove('hidden');
+            const closeModal = (modal) => {
+                modal.classList.add('hidden');
+                modal.classList.remove('flex');
             };
 
-            const loadScriptOnce = (key, src, selectorQuery = `script[src="${src}"]`) => {
-                if (window.__paymenterSdkLoads[key]) {
-                    return window.__paymenterSdkLoads[key];
-                }
-
-                window.__paymenterSdkLoads[key] = new Promise((resolve, reject) => {
-                    const existing = document.querySelector(selectorQuery);
-                    if (existing) {
-                        if (existing.dataset.loaded === 'true') {
-                            resolve();
-                            return;
-                        }
-
-                        existing.addEventListener('load', () => resolve(), { once: true });
-                        existing.addEventListener('error', reject, { once: true });
-                        return;
-                    }
-
-                    const script = document.createElement('script');
-                    script.src = src;
-                    script.async = true;
-                    script.onload = () => {
-                        script.dataset.loaded = 'true';
-                        resolve();
-                    };
-                    script.onerror = reject;
-                    document.body.appendChild(script);
-                });
-
-                return window.__paymenterSdkLoads[key];
+            const openModal = (modal) => {
+                modal.classList.remove('hidden');
+                modal.classList.add('flex');
             };
 
-            const buildPayPalSdkUrl = () => {
-                const url = new URL('https://www.paypal.com/sdk/js');
-                url.searchParams.set('client-id', clientId);
-                url.searchParams.set('currency', currencyCode);
-                url.searchParams.set('components', 'buttons,card-fields');
-
-                return url.toString();
+            const resetCheckout = () => {
+                appleDummy.classList.add('hidden');
+                googleDummy.classList.add('hidden');
+                dummyMessage.classList.add('hidden');
             };
 
-            const captureOrder = async () => {
-                const response = await fetch(`${captureUrl}?orderID=${encodeURIComponent(orderId)}`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                });
-
-                const data = await response.json();
-                const errorDetail = data?.details?.[0];
-
-                if (!response.ok || errorDetail) {
-                    throw new Error(errorDetail?.description || 'Unable to capture the PayPal order.');
-                }
-
-                window.location.href = @js(route('invoices.show', $invoice) . '?checkPayment=true');
-                return data;
-            };
-
-            const renderFallbackButtons = async () => {
-                if (fallbackButtonsRendered) {
-                    fallbackPayPal.classList.remove('hidden');
-                    dummyCheckout.classList.remove('hidden');
-                    return;
-                }
-
-                await loadScriptOnce(
-                    'paypal-card-fields-sdk',
-                    buildPayPalSdkUrl(),
-                    'script[src^="https://www.paypal.com/sdk/js"]'
-                );
-
-                if (!window.paypal?.Buttons) {
-                    return;
-                }
-
-                fallbackButtonsRendered = true;
-                fallbackPayPal.classList.remove('hidden');
-                dummyCheckout.classList.remove('hidden');
-
-                paypal.Buttons({
-                    style: {
-                        shape: 'rect',
-                        layout: 'vertical',
-                        color: 'gold',
-                        label: 'paypal',
-                    },
-                    createOrder: () => orderId,
-                    onApprove: async () => {
-                        await captureOrder();
-                    },
-                    onError: (error) => {
-                        console.error(error);
-                        setError(error?.message || 'Unable to load PayPal checkout.');
-                    },
-                }).render(`#${domId}-button-container`);
-            };
-
-            const initCardFields = async () => {
-                if (cardFieldsInstance) {
-                    return cardFieldsInstance;
-                }
-
-                await loadScriptOnce(
-                    'paypal-card-fields-sdk',
-                    buildPayPalSdkUrl(),
-                    'script[src^="https://www.paypal.com/sdk/js"]'
-                );
-
-                if (!window.paypal?.CardFields) {
-                    throw new Error('PayPal card fields failed to load.');
-                }
-
-                cardFieldsInstance = paypal.CardFields({
-                    createOrder: () => orderId,
-                    onApprove: async () => {
-                        await captureOrder();
-                    },
-                    onError: (error) => {
-                        console.error(error);
-                        setError(error?.message || 'Card payment failed. Please check your details and try again.');
-                    },
-                });
-
-                return cardFieldsInstance;
-            };
-
-            const renderCardFields = async () => {
-                setError('');
-                loadingBox.classList.remove('hidden');
-                fallbackPayPal.classList.add('hidden');
-                dummyCheckout.classList.add('hidden');
-
-                const cardFields = await initCardFields();
-
-                if (!cardFields.isEligible()) {
-                    eligibilityMessage.classList.remove('hidden');
-                    cardForm.classList.add('hidden');
-                    loadingBox.classList.add('hidden');
-                    await renderFallbackButtons();
-                    return;
-                }
-
-                eligibilityMessage.classList.add('hidden');
-                cardForm.classList.remove('hidden');
-                loadingBox.classList.add('hidden');
-
-                if (cardFieldsRendered) {
-                    return;
-                }
-
-                cardFieldsRendered = true;
-
-                cardFields.NameField().render(`#${domId}-card-name-field-container`);
-                cardFields.NumberField().render(`#${domId}-card-number-field-container`);
-                cardFields.ExpiryField().render(`#${domId}-card-expiry-field-container`);
-                cardFields.CVVField().render(`#${domId}-card-cvv-field-container`);
-
-                submitButton.addEventListener('click', async () => {
-                    setError('');
-                    submitButton.disabled = true;
-                    submitButton.classList.add('opacity-60', 'pointer-events-none');
-
-                    try {
-                        const state = await cardFields.getState();
-
-                        if (!state?.isFormValid) {
-                            throw new Error('Please complete all card fields before submitting.');
-                        }
-
-                        await cardFields.submit();
-                    } catch (error) {
-                        console.error(error);
-                        setError(error?.message || 'Unable to submit card payment.');
-                    } finally {
-                        submitButton.disabled = false;
-                        submitButton.classList.remove('opacity-60', 'pointer-events-none');
-                    }
-                }, { once: true });
-            };
-
-            const closeApplePayModal = () => {
-                applePayModal.classList.add('hidden');
-                applePayModal.classList.remove('flex');
-            };
-
-            const openApplePayModal = () => {
-                applePayModal.classList.remove('hidden');
-                applePayModal.classList.add('flex');
-            };
-
-            const closeGooglePayModal = () => {
-                googlePayModal.classList.add('hidden');
-                googlePayModal.classList.remove('flex');
-            };
-
-            const openGooglePayModal = () => {
-                googlePayModal.classList.remove('hidden');
-                googlePayModal.classList.add('flex');
-            };
-
-            const showCardCheckout = async (walletLabel) => {
-                selectedWalletLabel.textContent = `${walletLabel} selected`;
+            const openDummyCheckout = (wallet) => {
                 selector.classList.add('hidden');
-                cardCheckout.classList.remove('hidden');
-                dummyCheckout.classList.add('hidden');
+                checkout.classList.remove('hidden');
+                resetCheckout();
 
-                try {
-                    await renderCardFields();
-                } catch (error) {
-                    console.error(error);
-                    loadingBox.classList.add('hidden');
-                    fallbackPayPal.classList.remove('hidden');
-                    dummyCheckout.classList.remove('hidden');
-                    setError(error?.message || 'Unable to load PayPal card checkout.');
-                    await renderFallbackButtons();
-                }
-            };
-
-            const handleWalletSelection = async (walletLabel) => {
-                if (walletLabel === 'Apple Pay') {
-                    openApplePayModal();
-                    return;
+                if (wallet === 'apple') {
+                    selectedWalletLabel.textContent = 'Apple Pay selected';
+                    checkoutTitle.textContent = 'Apple Pay Demo Checkout';
+                    checkoutSubtitle.textContent = 'Review your Apple Pay styled fallback checkout below.';
+                    appleDummy.classList.remove('hidden');
+                } else {
+                    selectedWalletLabel.textContent = 'Google Pay selected';
+                    checkoutTitle.textContent = 'Google Pay Demo Checkout';
+                    checkoutSubtitle.textContent = 'Review your Google Pay styled fallback checkout below.';
+                    googleDummy.classList.remove('hidden');
                 }
 
-                if (walletLabel === 'Google Pay') {
-                    openGooglePayModal();
-                    return;
-                }
-
-                await showCardCheckout(walletLabel);
+                dummyMessage.classList.remove('hidden');
             };
 
             document.addEventListener('click', (event) => {
@@ -511,63 +348,59 @@
                 }
 
                 event.preventDefault();
-                const wallet = button.dataset.walletOption === 'apple' ? 'Apple Pay' : 'Google Pay';
-                if (button.dataset.loading === 'true') {
-                    return;
+
+                if (button.dataset.walletOption === 'apple') {
+                    openModal(applePayModal);
+                } else {
+                    openModal(googlePayModal);
                 }
-                button.dataset.loading = 'true';
-
-                Promise.resolve(handleWalletSelection(wallet)).finally(() => {
-                    delete button.dataset.loading;
-                });
             });
 
-            changeMethodButton?.addEventListener('click', () => {
-                cardCheckout.classList.add('hidden');
+            changeMethodButton.addEventListener('click', () => {
+                checkout.classList.add('hidden');
                 selector.classList.remove('hidden');
-                loadingBox.classList.add('hidden');
-                fallbackPayPal.classList.add('hidden');
-                dummyCheckout.classList.add('hidden');
-                setError('');
+                resetCheckout();
             });
 
-            if (preselectedWallet === 'applepay') {
-                openApplePayModal();
-            } else if (preselectedWallet === 'googlepay') {
-                openGooglePayModal();
-            }
-
-            applePayClose.addEventListener('click', closeApplePayModal);
-            applePayCancel.addEventListener('click', () => {
-                closeApplePayModal();
-                cardCheckout.classList.add('hidden');
-                selector.classList.remove('hidden');
-            });
-            applePayContinue.addEventListener('click', async () => {
-                closeApplePayModal();
-                await showCardCheckout('Apple Pay');
+            applePayClose.addEventListener('click', () => closeModal(applePayModal));
+            applePayCancel.addEventListener('click', () => closeModal(applePayModal));
+            applePayContinue.addEventListener('click', () => {
+                closeModal(applePayModal);
+                openDummyCheckout('apple');
             });
             applePayModal.addEventListener('click', (event) => {
                 if (event.target === applePayModal) {
-                    closeApplePayModal();
+                    closeModal(applePayModal);
                 }
             });
 
-            googlePayClose.addEventListener('click', closeGooglePayModal);
-            googlePayCancel.addEventListener('click', () => {
-                closeGooglePayModal();
-                cardCheckout.classList.add('hidden');
-                selector.classList.remove('hidden');
-            });
-            googlePayContinue.addEventListener('click', async () => {
-                closeGooglePayModal();
-                await showCardCheckout('Google Pay');
+            googlePayClose.addEventListener('click', () => closeModal(googlePayModal));
+            googlePayCancel.addEventListener('click', () => closeModal(googlePayModal));
+            googlePayContinue.addEventListener('click', () => {
+                closeModal(googlePayModal);
+                openDummyCheckout('google');
             });
             googlePayModal.addEventListener('click', (event) => {
                 if (event.target === googlePayModal) {
-                    closeGooglePayModal();
+                    closeModal(googlePayModal);
                 }
             });
+
+            appleConfirm.addEventListener('click', () => {
+                dummyMessage.textContent = 'Apple Pay demo confirmed. This fallback does not process a live payment.';
+                dummyMessage.classList.remove('hidden');
+            });
+
+            googleConfirm.addEventListener('click', () => {
+                dummyMessage.textContent = 'Google Pay demo confirmed. This fallback does not process a live payment.';
+                dummyMessage.classList.remove('hidden');
+            });
+
+            if (preselectedWallet === 'applepay') {
+                openModal(applePayModal);
+            } else if (preselectedWallet === 'googlepay') {
+                openModal(googlePayModal);
+            }
         })();
     </script>
 @endscript
