@@ -12,19 +12,29 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('currencies', function (Blueprint $table) {
-            $table->string('name')->after('code')->nullable();
-        });
+        if (!Schema::hasColumn('currencies', 'name')) {
+            Schema::table('currencies', function (Blueprint $table) {
+                $table->string('name')->after('code')->nullable();
+            });
+        }
 
         // Set name for existing currencies
-        Currency::each(function ($currency) {
-            $currency->name = $currency->code;
-            $currency->save();
-        });
+        Currency::query()
+            ->whereNull('name')
+            ->each(function ($currency) {
+                $currency->name = $currency->code;
+                $currency->save();
+            });
 
-        Schema::table('currencies', function (Blueprint $table) {
-            $table->string('name')->nullable(false)->change();
-        });
+        if (!Schema::hasColumn('currencies', 'name')) {
+            return;
+        }
+
+        if (Currency::query()->whereNull('name')->doesntExist()) {
+            Schema::table('currencies', function (Blueprint $table) {
+                $table->string('name')->nullable(false)->change();
+            });
+        }
     }
 
     /**
@@ -32,6 +42,10 @@ return new class extends Migration
      */
     public function down(): void
     {
+        if (!Schema::hasColumn('currencies', 'name')) {
+            return;
+        }
+
         Schema::table('currencies', function (Blueprint $table) {
             $table->dropColumn('name');
         });
