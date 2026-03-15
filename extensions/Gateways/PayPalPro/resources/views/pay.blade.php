@@ -133,6 +133,53 @@
             </div>
         </div>
     </div>
+
+    <div id="{{ $paypalProDomId }}-applepay-modal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/55 p-4">
+        <div class="relative w-full max-w-[580px] overflow-hidden rounded-[2rem] bg-[#232326] text-white shadow-2xl">
+            <button type="button" id="{{ $paypalProDomId }}-applepay-close"
+                class="absolute right-5 top-5 flex size-10 items-center justify-center rounded-full bg-white/10 text-white transition hover:bg-white/20">
+                <span class="text-2xl leading-none">&times;</span>
+            </button>
+
+            <div class="flex flex-col items-center px-8 pb-8 pt-10">
+                <div class="relative mb-8 flex size-[250px] items-center justify-center rounded-full">
+                    <div class="absolute inset-0 rounded-full border-[6px] border-dashed border-white/70"></div>
+                    <div class="absolute inset-[18px] rounded-full border-[6px] border-dashed border-white/45"></div>
+                    <div class="absolute inset-[36px] rounded-full border-[6px] border-dashed border-white/80"></div>
+                    <div class="absolute inset-[54px] rounded-full border-[6px] border-dashed border-white/35"></div>
+                    <div class="absolute inset-[72px] rounded-full border-[6px] border-dashed border-white/70"></div>
+                    <div class="absolute inset-[90px] flex items-center justify-center rounded-full bg-white text-black shadow-lg">
+                        <div class="flex items-center gap-1 text-3xl font-semibold tracking-tight">
+                            <span class="text-2xl"></span>
+                            <span>Pay</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-black/20 px-8 pb-6 pt-7 text-center">
+                <h3 class="text-[2rem] font-semibold leading-tight">Scan Code with iPhone</h3>
+                <p class="mx-auto mt-3 max-w-md text-lg leading-8 text-white/85">
+                    Use the Camera app to continue your Apple Pay purchase on your iPhone. Requires iOS 18 or later.
+                </p>
+
+                <div class="mt-8 flex flex-col gap-3 sm:flex-row sm:justify-center">
+                    <button type="button" id="{{ $paypalProDomId }}-applepay-continue"
+                        class="rounded-xl bg-white px-5 py-3 text-sm font-semibold text-black transition hover:bg-white/90">
+                        Continue to Checkout
+                    </button>
+                    <button type="button" id="{{ $paypalProDomId }}-applepay-cancel"
+                        class="rounded-xl border border-white/15 bg-white/5 px-5 py-3 text-sm font-semibold text-white transition hover:bg-white/10">
+                        Cancel
+                    </button>
+                </div>
+
+                <p class="mt-7 text-xs text-white/60">
+                    Copyright &copy; 2026 Apple Inc. All rights reserved. <span class="underline">Privacy Policy</span>
+                </p>
+            </div>
+        </div>
+    </div>
 </div>
 
 @script
@@ -158,8 +205,12 @@
             const dummyCheckout = document.getElementById(`${domId}-dummy-checkout`);
             const submitButton = document.getElementById(`${domId}-card-submit`);
             const errorBox = document.getElementById(`${domId}-card-error`);
+            const applePayModal = document.getElementById(`${domId}-applepay-modal`);
+            const applePayClose = document.getElementById(`${domId}-applepay-close`);
+            const applePayCancel = document.getElementById(`${domId}-applepay-cancel`);
+            const applePayContinue = document.getElementById(`${domId}-applepay-continue`);
 
-            if (!selector || !cardCheckout || !selectedWalletLabel || !changeMethodButton || !eligibilityMessage || !loadingBox || !cardForm || !fallbackPayPal || !dummyCheckout || !submitButton || !errorBox) {
+            if (!selector || !cardCheckout || !selectedWalletLabel || !changeMethodButton || !eligibilityMessage || !loadingBox || !cardForm || !fallbackPayPal || !dummyCheckout || !submitButton || !errorBox || !applePayModal || !applePayClose || !applePayCancel || !applePayContinue) {
                 return;
             }
 
@@ -360,6 +411,16 @@
                 }, { once: true });
             };
 
+            const closeApplePayModal = () => {
+                applePayModal.classList.add('hidden');
+                applePayModal.classList.remove('flex');
+            };
+
+            const openApplePayModal = () => {
+                applePayModal.classList.remove('hidden');
+                applePayModal.classList.add('flex');
+            };
+
             const showCardCheckout = async (walletLabel) => {
                 selectedWalletLabel.textContent = `${walletLabel} selected`;
                 selector.classList.add('hidden');
@@ -378,6 +439,15 @@
                 }
             };
 
+            const handleWalletSelection = async (walletLabel) => {
+                if (walletLabel === 'Apple Pay') {
+                    openApplePayModal();
+                    return;
+                }
+
+                await showCardCheckout(walletLabel);
+            };
+
             document.addEventListener('click', (event) => {
                 const button = event.target.closest(`[data-wallet-option][data-paypal-pro-root="${domId}"]`);
 
@@ -392,7 +462,7 @@
                 }
                 button.dataset.loading = 'true';
 
-                Promise.resolve(showCardCheckout(wallet)).finally(() => {
+                Promise.resolve(handleWalletSelection(wallet)).finally(() => {
                     delete button.dataset.loading;
                 });
             });
@@ -407,10 +477,26 @@
             });
 
             if (preselectedWallet === 'applepay') {
-                showCardCheckout('Apple Pay');
+                openApplePayModal();
             } else if (preselectedWallet === 'googlepay') {
                 showCardCheckout('Google Pay');
             }
+
+            applePayClose.addEventListener('click', closeApplePayModal);
+            applePayCancel.addEventListener('click', () => {
+                closeApplePayModal();
+                cardCheckout.classList.add('hidden');
+                selector.classList.remove('hidden');
+            });
+            applePayContinue.addEventListener('click', async () => {
+                closeApplePayModal();
+                await showCardCheckout('Apple Pay');
+            });
+            applePayModal.addEventListener('click', (event) => {
+                if (event.target === applePayModal) {
+                    closeApplePayModal();
+                }
+            });
         })();
     </script>
 @endscript
