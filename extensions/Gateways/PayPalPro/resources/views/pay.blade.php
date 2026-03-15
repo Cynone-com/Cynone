@@ -1,6 +1,8 @@
 @php($paypalProDomId = 'paypal-pro-' . ($order->id ?? 'checkout'))
+@php($hasPreselectedWallet = filled($selectedWalletOption ?? null))
 
 <div class="space-y-4">
+    @unless($hasPreselectedWallet)
     <div class="rounded-xl border border-neutral bg-background-secondary p-4">
         <div class="flex items-center justify-between gap-3">
             <div>
@@ -14,8 +16,9 @@
             </div>
         </div>
     </div>
+    @endunless
 
-    <div id="{{ $paypalProDomId }}-selector" class="space-y-3">
+    <div id="{{ $paypalProDomId }}-selector" class="space-y-3 {{ $hasPreselectedWallet ? 'hidden' : '' }}">
         <div class="grid gap-3 md:grid-cols-2">
             <button type="button" data-wallet-option="apple" data-paypal-pro-root="{{ $paypalProDomId }}"
                 class="paypal-pro-wallet-option flex items-center justify-between rounded-xl border border-neutral bg-background-secondary p-4 text-left transition hover:border-primary">
@@ -37,7 +40,7 @@
         </div>
     </div>
 
-    <div id="{{ $paypalProDomId }}-card-checkout" class="hidden rounded-xl border border-neutral bg-background-secondary p-4">
+    <div id="{{ $paypalProDomId }}-card-checkout" class="{{ $hasPreselectedWallet ? '' : 'hidden' }} rounded-xl border border-neutral bg-background-secondary p-4">
         <div class="flex items-start justify-between gap-4">
             <div>
                 <p id="{{ $paypalProDomId }}-selected-wallet" class="text-sm font-semibold text-primary"></p>
