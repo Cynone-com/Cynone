@@ -12,7 +12,8 @@
         @endisset
     </title>
     @livewireStyles
-    @vite(['themes/' . config('settings.theme') . '/js/app.js', 'themes/' . config('settings.theme') . '/css/app.css'], config('settings.theme'))
+    @php($activeTheme = config('settings.theme', 'default'))
+    @vite(['themes/' . $activeTheme . '/js/app.js', 'themes/' . $activeTheme . '/css/app.css'], $activeTheme)
     @include('layouts.colors')
 
     @if (config('settings.favicon'))
