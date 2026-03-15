@@ -52,6 +52,11 @@
             PayPal card fields are not eligible for this merchant account yet.
         </div>
 
+        <div id="paypal-pro-card-loading"
+            class="mt-4 hidden rounded-lg border border-neutral bg-background p-3 text-sm text-base/70">
+            Loading PayPal credit card checkout...
+        </div>
+
         <div id="paypal-pro-card-form" class="mt-4 hidden space-y-4">
             <div class="grid gap-4 md:grid-cols-2">
                 <div>
@@ -84,6 +89,13 @@
                 Pay {{ $invoice->formattedRemaining }}
             </button>
         </div>
+
+        <div id="paypal-pro-fallback-paypal" class="mt-4 hidden space-y-3">
+            <div class="rounded-lg border border-neutral bg-background p-3 text-sm text-base/70">
+                Standard PayPal checkout is available as a fallback if card fields are unavailable.
+            </div>
+            <div id="paypal-pro-button-container"></div>
+        </div>
     </div>
 </div>
 
@@ -102,12 +114,15 @@
             const selectedWalletLabel = document.getElementById('paypal-pro-selected-wallet');
             const changeMethodButton = document.getElementById('paypal-pro-change-method');
             const eligibilityMessage = document.getElementById('paypal-pro-card-eligibility-message');
+            const loadingBox = document.getElementById('paypal-pro-card-loading');
             const cardForm = document.getElementById('paypal-pro-card-form');
+            const fallbackPayPal = document.getElementById('paypal-pro-fallback-paypal');
             const submitButton = document.getElementById('paypal-pro-card-submit');
             const errorBox = document.getElementById('paypal-pro-card-error');
 
             let cardFieldsInstance = null;
             let cardFieldsRendered = false;
+            let fallbackButtonsRendered = false;
 
             const setError = (message) => {
                 if (!message) {
@@ -156,7 +171,7 @@
                 const url = new URL('https://www.paypal.com/sdk/js');
                 url.searchParams.set('client-id', clientId);
                 url.searchParams.set('currency', currencyCode);
-                url.searchParams.set('components', 'card-fields');
+                url.searchParams.set('components', 'buttons,card-fields');
 
                 return url.toString();
             };
@@ -178,6 +193,43 @@
 
                 window.location.href = @js(route('invoices.show', $invoice) . '?checkPayment=true');
                 return data;
+            };
+
+            const renderFallbackButtons = async () => {
+                if (fallbackButtonsRendered) {
+                    fallbackPayPal.classList.remove('hidden');
+                    return;
+                }
+
+                await loadScriptOnce(
+                    'paypal-card-fields-sdk',
+                    buildPayPalSdkUrl(),
+                    'script[src^="https://www.paypal.com/sdk/js"]'
+                );
+
+                if (!window.paypal?.Buttons) {
+                    return;
+                }
+
+                fallbackButtonsRendered = true;
+                fallbackPayPal.classList.remove('hidden');
+
+                paypal.Buttons({
+                    style: {
+                        shape: 'rect',
+                        layout: 'vertical',
+                        color: 'gold',
+                        label: 'paypal',
+                    },
+                    createOrder: () => orderId,
+                    onApprove: async () => {
+                        await captureOrder();
+                    },
+                    onError: (error) => {
+                        console.error(error);
+                        setError(error?.message || 'Unable to load PayPal checkout.');
+                    },
+                }).render('#paypal-pro-button-container');
             };
 
             const initCardFields = async () => {
@@ -211,17 +263,22 @@
 
             const renderCardFields = async () => {
                 setError('');
+                loadingBox.classList.remove('hidden');
+                fallbackPayPal.classList.add('hidden');
 
                 const cardFields = await initCardFields();
 
                 if (!cardFields.isEligible()) {
                     eligibilityMessage.classList.remove('hidden');
                     cardForm.classList.add('hidden');
+                    loadingBox.classList.add('hidden');
+                    await renderFallbackButtons();
                     return;
                 }
 
                 eligibilityMessage.classList.add('hidden');
                 cardForm.classList.remove('hidden');
+                loadingBox.classList.add('hidden');
 
                 if (cardFieldsRendered) {
                     return;
@@ -266,20 +323,37 @@
                     await renderCardFields();
                 } catch (error) {
                     console.error(error);
+                    loadingBox.classList.add('hidden');
+                    fallbackPayPal.classList.remove('hidden');
                     setError(error?.message || 'Unable to load PayPal card checkout.');
+                    await renderFallbackButtons();
                 }
             };
 
-            document.querySelectorAll('[data-wallet-option]').forEach((button) => {
-                button.addEventListener('click', () => {
-                    const wallet = button.dataset.walletOption === 'apple' ? 'Apple Pay' : 'Google Pay';
-                    showCardCheckout(wallet);
+            document.addEventListener('click', (event) => {
+                const button = event.target.closest('[data-wallet-option]');
+
+                if (!button) {
+                    return;
+                }
+
+                event.preventDefault();
+                const wallet = button.dataset.walletOption === 'apple' ? 'Apple Pay' : 'Google Pay';
+                if (button.dataset.loading === 'true') {
+                    return;
+                }
+                button.dataset.loading = 'true';
+
+                Promise.resolve(showCardCheckout(wallet)).finally(() => {
+                    delete button.dataset.loading;
                 });
             });
 
             changeMethodButton?.addEventListener('click', () => {
                 cardCheckout.classList.add('hidden');
                 selector.classList.remove('hidden');
+                loadingBox.classList.add('hidden');
+                fallbackPayPal.classList.add('hidden');
                 setError('');
             });
         })();
