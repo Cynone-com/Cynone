@@ -19,6 +19,7 @@ if [ ! -f /app/.env ] && [ -f /app/.env.example ]; then
 fi
 
 if [ -f /app/artisan ]; then
+    php /app/artisan package:discover --ansi
     php /app/artisan config:clear || true
     php /app/artisan route:clear || true
     php /app/artisan view:clear || true

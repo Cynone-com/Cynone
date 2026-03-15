@@ -15,7 +15,7 @@ COPY composer.json composer.lock ./
 RUN composer install --no-dev --no-autoloader --no-scripts
 
 COPY . ./
-RUN composer install --no-dev --optimize-autoloader
+RUN composer install --no-dev --optimize-autoloader --no-scripts
 
 RUN cp .env.example .env \
     && chmod 777 -R bootstrap storage/* \
